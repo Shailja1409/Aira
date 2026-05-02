@@ -1,6 +1,5 @@
 """
 Aira — Fully Offline AI Assistant
-=======================================
 4-agent pipeline — no cloud APIs required.
 Run: python server.py
 Then open: http://127.0.0.1:5000
@@ -54,7 +53,7 @@ from db import (
 # ── Config from environment (all optional — sensible defaults) ────────────────
 _DEVICE       = os.getenv("AIRA_DEVICE",  "cpu")
 _WHISPER_MODEL = os.getenv("WHISPER_MODEL",    "medium")
-_GROQ_MODEL    = os.getenv("GROQ_MODEL",       "llama-3.1-8b-instant")
+_GROQ_MODEL    = os.getenv("GROQ_MODEL",       "llama-3.3-70b-versatile")
 _GROQ_API_KEY  = os.getenv("GROQ_API_KEY",     "")
 _GROQ_URL      = os.getenv("GROQ_URL",         "https://api.groq.com/openai/v1/chat/completions")
 _WAKE_ENABLED  = os.getenv("AIRA_WAKE",   "true").lower() in {"1", "true", "yes"}
@@ -240,7 +239,7 @@ def _convert_profile_audio_to_wav(audio_bytes: bytes) -> bytes | None:
 
         # Fallback path: direct ffmpeg.
         subprocess.run(
-            ["ffmpeg", "-y", "-i", in_path, "-ar", "24000", "-ac", "1", out_path],
+            ["ffmpeg", "-y", "-i", in_path, "-t", "8", "-ar", "24000", "-ac", "1", out_path],
             check=True,
             capture_output=True,
         )
@@ -740,18 +739,44 @@ def chat():
             tone_rule = _style_guideline(companion_style)
             system_prompt = (
                 f"{system_prompt}\n\n"
-                "Companion Persona:\n"
-                f"- Name: {companion_name}\n"
-                f"- Relationship to user: {relationship}\n"
-                f"- Personality style: {companion_style}\n"
-                f"- Preferred neutral language: {preferred_language}\n"
-                f"- You must always call them: \"{nickname}\"\n\n"
-                "Conversation Rules:\n"
-                f"- {tone_rule}\n"
-                "- Sound like a real human: warm, natural, and context-aware phrasing.\n"
-                "- Never sound robotic; avoid assistant disclaimers and repetitive templates.\n"
-                "- Mirror the user's latest language and script choice in every reply.\n"
-                "- Keep factual answers accurate and direct; for emotional chats be empathetic without inventing events."
+                "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                "COMPANION PERSONA\n"
+                "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                f"You are playing the role of: {companion_name} ({relationship} of the user).\n"
+                f"Personality style: {companion_style}\n"
+                f"Preferred language: {preferred_language}\n"
+                f"Always address the user as: \"{nickname}\"\n\n"
+                f"Tone guideline: {tone_rule}\n\n"
+                "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                "ABSOLUTE GROUNDING RULES — NON-NEGOTIABLE:\n"
+                "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                "RULE 1: You ONLY know what the user explicitly tells you in THIS conversation.\n"
+                "RULE 2: NEVER invent, guess or fabricate ANY specific fact about:\n"
+                "  - People's health, illness, medical events, doctor visits\n"
+                "  - What someone said, did, ate, bought, felt or experienced\n"
+                "  - Family situations or events the user has NOT described to you\n"
+                "RULE 3: When you don't know something the user asks about:\n"
+                "  → ASK them. Don't make up an answer.\n"
+                "RULE 4: You can be warm, caring, and supportive WITHOUT inventing details.\n"
+                "\n"
+                "━━ FEW-SHOT EXAMPLES (follow this pattern exactly) ━━\n"
+                "\n"
+                "WRONG (hallucination — never do this):\n"
+                "  User: 'q mummy ko kya hua?'\n"
+                "  BAD reply: 'Usne toh sir ka dard hua tha, doctor ne injection di.' ← INVENTED!\n"
+                "\n"
+                "CORRECT (ask, don't invent):\n"
+                "  User: 'q mummy ko kya hua?'\n"
+                "  GOOD reply: 'Tune bataya nahi beta, kya hua usse? Sab theek toh hai?'\n"
+                "\n"
+                "WRONG (hallucination — never do this):\n"
+                "  User: 'bhai kaise hai?'\n"
+                "  BAD reply: 'Bhaiya bahut achha hai, kal cricket khela usne.' ← INVENTED!\n"
+                "\n"
+                "CORRECT (honest, grounded):\n"
+                "  User: 'bhai kaise hai?'\n"
+                "  GOOD reply: 'Usne tujhe kuch bataya? Main yahan tha nahi, tu hi bata.'\n"
+                "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
             )
 
         requested_groq_key = (data.get("groq_api_key") or "").strip()
@@ -963,12 +988,15 @@ def transcribe_profile_audio():
         with open(save_path, "wb") as fh:
             fh.write(audio_to_store)
 
+        # Extract voice_type from form data (sent from frontend)
+        form_voice_type = (request.form.get("voice_type") or "female").strip().lower()
+
         _store_profile_voice_metadata(
             profile_voice_id=profile_voice_id,
             sample_path=save_path,
             voice_name=f"Aira Voice {profile_voice_id[:6]}",
             language_code=lang,
-            voice_type="female",
+            voice_type=form_voice_type,
         )
 
         transcript = ""
