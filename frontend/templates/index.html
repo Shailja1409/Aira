@@ -454,6 +454,14 @@
           <div class="chat-header-right">
             <span class="clone-badge" id="cloneStatusBadge" style="display:none">Voice clone off</span>
             <span class="lang-badge" id="chatLangBadge">HI</span>
+            <!-- Wake up button for voice mode -->
+            <button class="wake-btn" id="wakeBtn" onclick="toggleWakeMode()" title="Wake up Aira">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/>
+                <path d="M19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/>
+              </svg>
+              <span class="wake-label">Wake</span>
+            </button>
             <button class="icon-toggle small" onclick="resetProfile()" title="New Profile">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M3 12a9 9 0 109-9 9.75 9.75 0 00-6.74 2.74L3 8"/><path d="M3 3v5h5"/>
