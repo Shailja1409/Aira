@@ -1,6 +1,5 @@
 """
 AGENT 1 — LISTENER AGENT
-=========================
 Converts audio (microphone / uploaded file) to text using
 Faster-Whisper running locally on GPU (or CPU fallback).
 
