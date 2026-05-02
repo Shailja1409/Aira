@@ -1,6 +1,5 @@
 """
 WAKE AGENT
-==========
 Listens continuously in the background for the wake word **"Aira"**
 and sets a threading.Event when the phrase is detected.
 
